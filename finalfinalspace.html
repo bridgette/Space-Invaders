@@ -1,0 +1,1045 @@
+
+<html>  
+
+<body bgcolor="#000000"> 
+<center>
+<img border="0" id="SplashScreen" src="SPLASH.jpg" alt="splash screen" width="800" height="550" />
+
+<img border="0" id="KillScreen" src="killscreen.jpg" alt="kill screen" width="800" height="550" style="display: none;"/>
+
+<canvas id="canvas" width="800" height="550" style="display: none;" ></canvas>
+</center>
+</body>
+
+
+
+<audio id="explosion" src="audio/explosion.wav" preload="auto"></audio>
+
+<audio id="fastinvader" src="audio/fastinvader4.wav" preload="auto"></audio>
+
+<audio id="killed" src="audio/invaderkilled.wav" preload="auto"></audio>
+
+<audio id="nyew" src="audio/nyew.wav" preload="auto"></audio>
+
+<audio id="shoot" src="audio/shoot.wav" preload="auto"></audio>
+
+
+
+
+
+<script type="text/javascript" src="jquery.js"></script>
+
+<script type="text/javascript">
+
+ // Splash screen
+$("#SplashScreen").click(function () {
+    $("#SplashScreen").hide();
+    $("#canvas").show();
+	init();
+	gameLoop();
+});
+
+ // Kill screen
+$("#KillScreen").click(function () {
+    $("#KillScreen").hide();
+    $("#canvas").show();
+	alienLasers=[];
+	lasers=[];
+	alienspeed=1;
+	lives = 3;
+ 	level = 1;
+        score = 0;
+	NCOLS = 11;
+	init();
+	gameLoop();
+});
+
+// --Canvas Variables--//
+
+c=document.getElementById("canvas");
+ctx=c.getContext("2d");
+WIDTH = c.width;
+HEIGHT = c.height;
+
+// --STATUS VARIABLES--//
+
+var gLoop;             // variable used for setTimeout()
+var offense;		   // variable used for setInterval()
+var level = 1;		   // your current level
+
+// --KEYBOARD PRESSES--//
+
+rightDown = false;
+leftDown = false;
+var score = 0;
+var gamePaused = false;
+
+// --ALIEN VARIABLES-- //
+
+var seeSaucer = false; // true if the red saucer is currently on the screen
+var saucerx;		   // current x position of saucer (y position is fixed)
+var aliens;    		   // A 2D array of aliens with elements 
+					   // [type, xpos, ypos, height, width]
+
+
+
+var	NROWS = 5;         // number of rows and columns of aliens
+var	NCOLS = 11;
+var ALIENWIDTH = 39; 
+var ALIENHEIGHT = 39;  // specfic to alien.ico 
+var PADDING = 10;
+
+
+
+var survivors;         // number of aliens left alive
+var aliendx = 1;       // used when the aliens 'bounce'
+var alienAnimate = 'UP';
+					   // can be either 'UP' or 'DOWN', used in animate()
+var alienSpeed = 1     // aliens move faster when they bounce off the walls
+var alienLasers = [];  // an array of alien lasers [xpos, ypos, height, width]
+
+// ----- LASERS -----  //
+
+var laserTotal = 0;    // max amount of lasers + 1
+var lasers =[];        // array of lasers, with elements [xpos, ypos, height, width]
+
+// ------ BASE ------- //
+var lives = 3;	       // number of lives you have
+var sheilds = [];	   // A double array of three sheilds, with [strength, xpos, ypos]
+					   // the 'strength' of each sheild is: 5 = full strength,
+					   // 4 = hit, 2 = failing, 0 = destroyed
+SHEILDHEIGHT = 100
+SHEILDWIDTH = 74
+basex = WIDTH / 2;     // base starts in the middle of the field
+baseh = 10;
+basew = 45; 
+var baseHit;		   // captain! We've been hit!
+
+/*
+ * Initialize Images
+ */
+// base
+
+var baseReady = false;
+var baseImage = new Image();
+baseImage.onload = function () { baseReady = true; };
+baseImage.src = "baseshipb.ico"; // green base, used for lives
+var greenBaseReady = false;
+var greenBaseImage = new Image();
+greenBaseImage.onload = function () { greenBaseReady = true; };
+greenBaseImage.src = "greenbase.ico";
+
+// alien 1
+
+var alien1Ready = false;
+
+var alien1Image = new Image();
+
+alien1Image.onload = function () { alien1Ready = true; };
+
+alien1Image.src = "saucer1b.ico";
+
+
+
+// alien 2
+
+var alien2Ready = false;
+
+var alien2Image = new Image();
+
+alien2Image.onload = function () { alien2Ready = true; };
+
+alien2Image.src = "saucer2b.ico";
+
+
+
+// alien 3
+
+var alien3Ready = false;
+
+var alien3Image = new Image();
+
+alien3Image.onload = function () { alien3Ready = true; };
+
+alien3Image.src = "saucer3b.ico";
+
+
+
+// alien 1 animated
+
+var alien1AnimatedReady = false;
+
+var alien1AnimatedImage = new Image();
+
+alien1AnimatedImage.onload = function () { alien1AnimatedReady = true; };
+
+alien1AnimatedImage.src = "saucer1banimated.ico";
+
+
+
+// alien 2 animated
+
+var alien2AnimatedReady = false;
+
+var alien2AnimatedImage = new Image();
+
+alien2AnimatedImage.onload = function () { alien2AnimatedReady = true; };
+
+alien2AnimatedImage.src = "saucer2banimated.ico";
+
+
+
+// alien 3 animated
+
+var alien3AnimatedReady = false;
+
+var alien3AnimatedImage = new Image();
+
+alien3AnimatedImage.onload = function () { alien3AnimatedReady = true; };
+
+alien3AnimatedImage.src = "saucer3banimated.ico";
+
+
+
+/*
+
+ *  Sheild Images
+
+ *    5 = full strength, 1 = failing
+
+ */
+
+// sheild 5
+
+var sheild5Ready = false;
+
+var sheild5Image = new Image();
+
+sheild5Image.onload = function () { sheild5Ready = true; };
+
+sheild5Image.src = "sheild5.ico";
+
+
+
+// sheild 4
+
+var sheild4Ready = false;
+
+var sheild4Image = new Image();
+
+sheild4Image.onload = function () { sheild4Ready = true; };
+
+sheild4Image.src = "sheild4.ico";
+
+
+
+// sheild 3
+
+var sheild3Ready = false;
+
+var sheild3Image = new Image();
+
+sheild3Image.onload = function () { sheild3Ready = true; };
+
+sheild3Image.src = "sheild3.ico";
+
+
+
+// sheild 2
+
+var sheild2Ready = false;
+
+var sheild2Image = new Image();
+
+sheild2Image.onload = function () { sheild2Ready = true; };
+
+sheild2Image.src = "sheild2.ico";
+
+
+
+// sheild 1
+
+var sheild1Ready = false;
+
+var sheild1Image = new Image();
+
+sheild1Image.onload = function () { sheild1Ready = true; };
+
+sheild1Image.src = "sheild1.ico";
+
+
+
+// Saucer
+
+var saucerReady = false;
+
+var saucerImage = new Image();
+
+saucerImage.onload = function () { saucerReady = true; };
+
+saucerImage.src = "mysteryb.ico";
+
+
+
+
+
+/* 
+
+ * Initialize Audio
+
+ *    first initializes an array of audio channels for overlapping sounds
+
+ *    function playSound() is called for audio handling
+
+ *    thanks to http://www.storiesinflight.com/html5/audio.html for base
+
+ */
+
+var channel_max = 10;								// number of channels
+
+audiochannels = new Array();
+
+for (a=0;a<channel_max;a++) {					// prepare the channels
+
+	audiochannels[a] = new Array();
+
+	audiochannels[a]['channel'] = new Audio();	// create a new audio object
+
+	audiochannels[a]['finished'] = -1;			// expected end time for this channel, init to -1
+
+}
+
+ 
+
+ function playSound(s) {
+
+		for (a=0; a<audiochannels.length; a++) {
+
+			thistime = new Date();
+
+			if (s == undefined) break; // audio channel might not be playing anything
+
+			if (audiochannels[a]['finished'] < thistime.getTime()) {			// is this channel finished?
+
+				audiochannels[a]['finished'] = thistime.getTime() + document.getElementById(s).duration*1000;
+
+				audiochannels[a]['channel'].src = document.getElementById(s).src;
+
+				audiochannels[a]['channel'].load();
+
+				audiochannels[a]['channel'].play();
+
+				break;
+
+			}
+
+		}
+
+	}
+
+ 
+
+ /* 
+
+  *   Space: the Final Frontier
+
+  *      initSpace() fills up array of star trails, drawStars() draws them
+
+  *      moveStars() moves them down the screen by deltaY, 'recycles' stars if they
+
+  *      fall off the edge of the map
+
+  */
+
+ var howManyStars = 20, stars = [];
+
+ 
+
+ function initSpace(){
+
+ for (var i = 0; i < howManyStars; i++)  
+
+	// stars elements consist of [xposition, yposition, length of trail, see-throughness]
+
+	stars.push([Math.random() * WIDTH, Math.random() * HEIGHT, Math.random()*100, Math.random() / 2]); 
+
+    
+
+ }
+
+ 
+
+ function drawStars(){  
+
+  for (var i = 0; i < howManyStars; i++) {  
+
+    ctx.fillStyle = 'rgba(255, 255, 255, ' + stars[i][3] + ')';  
+
+//white color with transparency in rgba  
+
+    ctx.beginPath();  
+
+    ctx.rect(stars[i][0], stars[i][1], 2, stars[i][2]);  
+
+    ctx.closePath();  
+
+    ctx.fill();  
+
+  }  
+
+} 
+
+
+
+function moveStars(deltaY){  
+
+  for (var i = 0; i < howManyStars; i++) {  
+
+    if (stars[i][1] - stars[i][2] > HEIGHT) {  
+
+//the star is under the screen so we change  
+
+//informations about it   
+
+      stars[i][0] = Math.random() * WIDTH;  
+
+      stars[i][2] = Math.random() * 100;  
+
+      stars[i][1] = 0 - stars[i][2];  
+
+      stars[i][3] = Math.random() / 2;  
+
+    } else {  
+
+      stars[i][1] += deltaY;  
+
+    }  
+
+  }  
+
+}  
+
+ 
+
+/*
+
+ * Keypress Handling
+
+ *      uses jQuery to log keypresses, then sets global
+
+ *      variables rightDown and leftDown to true if presssed.
+
+ *      If key was spacebar (32), adds a laser to laser array.
+
+ *      Unsets rightDown, leftDown when key is released.
+
+ *      'p' pauses the game.
+
+ */
+
+ 
+
+// JQuery 
+
+$(document).keydown(keyDown);
+
+$(document).keyup(keyUp);
+
+  
+
+// Key is Pressed
+
+function keyDown(evt) {
+
+  if (evt.keyCode == 39) rightDown = true;
+
+  else if (evt.keyCode == 37) leftDown = true;
+
+  if (evt.keyCode == 32 && lasers.length <= laserTotal) {
+
+    playSound('shoot');
+
+	lasers.push([basex + 20, HEIGHT - baseh, 4, 10]); }
+
+  if (evt.keyCode == 80) pauseGame();
+
+
+
+}
+
+// Key is Unset
+
+function keyUp(evt) {
+
+  if (evt.keyCode == 39) rightDown = false;
+
+  else if (evt.keyCode == 37) leftDown = false;
+
+}
+
+
+
+function pauseGame(){
+	if (!gamePaused) {
+		gamePaused = true;
+		clearTimeout(game);
+		offense = clearInterval(offense);
+	} 
+	else if (gamePaused) {
+		gamePaused = false;
+		game = setTimeout(gameLoop, 1000 / 30);
+		offense = setInterval(alienOffensive, 1000);  
+	}
+}
+
+
+
+
+
+/*
+
+ *  Sheilds
+
+ *      initSheilds() initalizes the array of sheilds with [strength, xpos, ypos]
+
+ *      drawSheilds() draws the sheilds
+
+ *      Sheilds are stored in var sheilds, an array, and tested in hitTest()
+
+ *         they can be hit by both your lasers and alien lasers
+
+ */
+
+ function initSheilds(){
+
+	y = HEIGHT - 100;
+
+	x = 75;
+
+	dx = 300;
+
+	for (i = 0; i < 3; i++){
+
+		sheilds[i] = [5, x, y]; // 5 = starting strength
+
+		x += dx;
+
+	}
+
+ }
+
+ 
+
+ function drawSheilds(){
+	for (i = 0; i < sheilds.length; i++){
+		if (sheilds[i][0] == 5 && sheild5Ready == true){
+			ctx.drawImage(sheild5Image, sheilds[i][1], sheilds[i][2], SHEILDHEIGHT, SHEILDWIDTH);
+		}
+		if (sheilds[i][0] == 4 && sheild4Ready == true){
+			ctx.drawImage(sheild4Image, sheilds[i][1], sheilds[i][2], SHEILDHEIGHT, SHEILDWIDTH);
+		}
+		if (sheilds[i][0] == 3 && sheild3Ready == true){
+			ctx.drawImage(sheild3Image, sheilds[i][1], sheilds[i][2], SHEILDHEIGHT, SHEILDWIDTH);
+		}
+		if (sheilds[i][0] == 2 && sheild2Ready == true){
+			ctx.drawImage(sheild2Image, sheilds[i][1], sheilds[i][2], SHEILDHEIGHT, SHEILDWIDTH);
+		}
+		if (sheilds[i][0] == 1 && sheild1Ready == true){
+			ctx.drawImage(sheild1Image, sheilds[i][1], sheilds[i][2], SHEILDHEIGHT, SHEILDWIDTH);
+		}
+		
+		// delete sheild from array if its down
+		if (sheilds[i][0] == 0){
+			sheilds.splice(i, 1);
+		}
+	}
+ }
+
+ 
+/*
+ * Fun With Aliens
+ * initaliens(), moveAliens(), drawAliens()
+ * animate() has its own setInterval(), which changes the .ico file 
+ *   drawn on the canvas to provide animation
+ * alienOffensive() will be used to make aliens randomly change direction
+ *   and shoot alien lasers
+ */
+ 
+
+ function initaliens(){
+ // creates an array of aliens
+ // columns first, this will help us later when we move aliens
+ 	aliens = new Array(NCOLS);
+	
+	alien_x = PADDING;   // starting (x, y) position of first alien
+	
+	for (c = 0; c < NCOLS; c++){
+		aliens[c] = new Array(NROWS);
+		alien_y = PADDING*8;
+		for ( r=0; r<NROWS; r++){	
+			// sets alien type based on row
+			if (r == 0) aliens[c][r] = new Array(3, alien_x, alien_y, ALIENHEIGHT, ALIENWIDTH);
+			else if (r == 1 || r == 2) aliens[c][r] = new Array(1, alien_x, alien_y, ALIENHEIGHT, ALIENWIDTH);
+			else aliens[c][r] = new Array(2, alien_x, alien_y, ALIENHEIGHT, ALIENWIDTH);
+			alien_y += ALIENHEIGHT + PADDING;
+		}
+		alien_x += ALIENWIDTH + PADDING; 
+	}
+	survivors = NROWS*NCOLS; // all of the aliens are alive... currently 		
+}
+
+// moveAliens() is responsible for alien's back-and-forth movements, including wall hits
+// and creeping forward. It also removes a column if the column is empty
+function moveAliens(){
+	forward = 0; // whether we should creep forward
+	for (c = 0; c < NCOLS; c++) {	
+		isEmpty = true; // first, we assume that a col of aliens is empty
+		for (r = 0; r < NROWS; r++) {
+		    // go right
+			if (aliens[NCOLS-1][NROWS-1][1] < WIDTH - ALIENWIDTH && aliendx > 0) aliens[c][r][1] += alienSpeed; 
+			
+			// or go left
+			else if (0 < aliens[0][0][1] && aliendx < 0) aliens[c][r][1] -= alienSpeed;
+			
+			// or bounce off wall
+			else  {
+				aliendx = aliendx * -1; 
+				forward = 1;
+			//	if (alienSpeed < 4.0) alienSpeed += 0.10;
+			}
+			
+			// we've seen an alien in this column
+			if (aliens[c][r][0] != 0) isEmpty = false; 
+			
+			// if an alien hits the bottom, you automatically lose
+			if (aliens[c][r][2] > HEIGHT - baseh - ALIENHEIGHT) {
+				lives -= 3;
+			}
+		}
+
+		// remove column from aliens if it's empty
+		if (isEmpty){
+			aliens.splice(c, 1); 
+			NCOLS -= 1;
+		}
+	}
+	
+	if (forward == 1) {
+		onwardAlien();
+		forward = 0;
+	}	
+}
+
+// makes the aliens creep forward by increasing their y-position
+// in the aliens array [type, xpos, ypos, icon height, icon width]
+function onwardAlien(){
+	for (col = 0; col < NCOLS; col++) {	
+		for (row = 0; row < NROWS; row++) {
+			aliens[col][row][2] += 10*(0.5*level);
+		}
+	}
+}
+
+function alienOffensive(){	
+	// to change the animation of the aliens. alienAnimate is used in
+    // drawAliens() to ascertain which image to use
+	if (alienAnimate == 'UP') alienAnimate = 'DOWN';
+	else if (alienAnimate == 'DOWN') alienAnimate = 'UP';
+	playSound('fastinvader');
+	
+	// small chance of red flying saucer if one isn't already present
+	if (0.85 < Math.random() && seeSaucer == false){
+		seeSaucer = true;
+		saucerx = 0;
+	}
+	// aliens shoot at you (if there are any left)
+	if (NCOLS > 0){
+		shooter = aliens[Math.floor(Math.random() * NCOLS)][Math.floor(Math.random() * NROWS)];
+		
+		if (shooter[0] != 0){ // if the alien isn't dead
+			alienLasers.push([shooter[1] + ALIENWIDTH/2, shooter[2] + ALIENHEIGHT, 4, 10]);
+		}	
+	}
+}
+
+
+function drawAliens(){
+	for (c=0; c < NCOLS; c++) {
+		for (r=0; r < NROWS; r++) {
+			if (aliens[c][r][0] == 1 && alien1Ready == true && alienAnimate == 'UP') {
+				ctx.drawImage(alien1Image, aliens[c][r][1], aliens[c][r][2], ALIENHEIGHT, ALIENWIDTH);				
+			}
+			if (aliens[c][r][0] == 2 && alien2Ready == true && alienAnimate == 'UP') {
+				ctx.drawImage(alien2Image, aliens[c][r][1], aliens[c][r][2], ALIENHEIGHT, ALIENWIDTH); 
+			}
+			if (aliens[c][r][0] == 3 && alien3Ready == true && alienAnimate == 'UP'){
+				ctx.drawImage(alien3Image, aliens[c][r][1], aliens[c][r][2], ALIENHEIGHT, ALIENWIDTH);
+			}
+			// should draw a different image of the alien if animated 
+			else if (aliens[c][r][0] == 1 && alien1AnimatedReady == true && alienAnimate == 'DOWN') {
+				ctx.drawImage(alien1AnimatedImage, aliens[c][r][1], aliens[c][r][2], ALIENHEIGHT, ALIENWIDTH);				
+			}
+			else if (aliens[c][r][0] == 2 && alien2AnimatedReady == true && alienAnimate == 'DOWN') {
+				ctx.drawImage(alien2AnimatedImage, aliens[c][r][1], aliens[c][r][2], ALIENHEIGHT, ALIENWIDTH); 
+			}
+			else if (aliens[c][r][0] == 3 && alien3AnimatedReady == true && alienAnimate == 'DOWN'){
+				ctx.drawImage(alien3AnimatedImage, aliens[c][r][1], aliens[c][r][2], ALIENHEIGHT, ALIENWIDTH);
+			}
+		}
+	}	  
+}
+
+/*
+ * Mystery Saucer!
+ *    drawSaucer() and moveSaucer(), which are each called when 
+ *     the saucer is visible: seeSaucer == true.
+ *     These set seeSaucer = false when the saucer hits the right side of the screen
+ */
+
+ function drawSaucer(){
+	if (saucerReady == true) ctx.drawImage(saucerImage, saucerx, 30, ALIENHEIGHT, ALIENWIDTH);
+ }
+ 
+ function moveSaucer(){
+	saucerx += 4;
+	if (saucerx >= WIDTH) seeSaucer = false; 
+ }
+ 
+/*
+ * Fun With Lasers
+ *   drawLaser(), moveLaser(), hitTest()
+ *   lasers are initialized in keypress handling
+ */ 
+	  
+function drawLaser() {
+  if (lasers.length)
+    for (var i = 0; i < lasers.length; i++) {
+      ctx.fillStyle = "#00FF00";
+      ctx.fillRect(lasers[i][0],lasers[i][1],lasers[i][2],lasers[i][3])
+    }
+	if (alienLasers.length){
+		for (var i = 0; i < alienLasers.length; i++) {
+			ctx.fillStyle = "#FF0033";
+			ctx.fillRect(alienLasers[i][0],alienLasers[i][1],alienLasers[i][2],alienLasers[i][3])
+   }
+}
+}
+
+
+function moveLaser() {
+  // move base lasers
+  for (var i = 0; i < lasers.length; i++) {
+    if (lasers[i][1] > -11) {
+      lasers[i][1] -= 13; // laser speed
+    } else if (lasers[i][1] < -10) {
+      lasers.splice(i, 1);
+    }
+  }
+  // move alien lasers
+  for (var i = 0; i < alienLasers.length; i++) {
+    if (alienLasers[i][1] < HEIGHT) {
+      alienLasers[i][1] += 10;
+    } else if (alienLasers[i][1] > HEIGHT) {
+      alienLasers.splice(i, 1);
+    }
+  }
+  
+  
+}
+
+// hitTest() checks to see if lasers have hit an alien, sheild, or base.
+// If so, removes the laser and 'kills' the alien, docks one from sheild strength, 
+// or calls hit(), respectively 
+ function hitTest(){
+
+ 
+
+	/* BASE LASERS */
+
+	var remove = false; // whether a laser has already hit something
+
+	for (l = 0; l < lasers.length; l++){
+
+	
+
+		// checks whether base laser has hit an alien
+
+		for (c = 0; c < NCOLS; c++){
+
+			for(r =0; r < NROWS; r++){
+
+				
+
+				if (lasers[l][1] >= aliens[c][r][2] &&
+
+					lasers[l][1] <= aliens[c][r][2] + aliens[c][r][3]
+
+					&& lasers[l][0] >=  aliens[c][r][1] && 
+
+					lasers[l][0] <= (aliens[c][r][1] + aliens[c][r][4])
+
+					&& aliens[c][r][0] != 0 && !remove){
+
+					
+
+				if (aliens[c][r][0] == 1) score += 10;
+
+				if (aliens[c][r][0] == 2) score += 20;
+
+				if (aliens[c][r][0] == 3) score += 30;
+
+				remove = true;
+
+				aliens[c][r][0] = 0; // stop displaying alien
+
+				playSound('killed');
+
+				survivors -= 1; 	 // one less alien to kill!
+
+					}
+
+				}
+
+			}
+
+			
+
+		// checks whether base laser has hit flying saucer
+
+		if (lasers[l][1] >= 30 &&
+
+			lasers[l][1] <= 30 + ALIENHEIGHT
+
+			&& lasers[l][0] >=  saucerx && 
+
+			lasers[l][0] <= saucerx + ALIENWIDTH
+
+			&& seeSaucer && !remove){
+
+		
+
+		score += 100;
+
+		seeSaucer = false;
+
+		remove = true;
+
+		}
+
+		
+
+		// checks whether base laser has hit a sheild
+
+		for (i = 0; i<sheilds.length; i++)
+
+			if (lasers[l][1] <= sheilds[i][2] + SHEILDWIDTH
+
+				&& lasers[l][0] >=  sheilds[i][1] && 
+
+				lasers[l][0] <= (sheilds[i][1] + SHEILDHEIGHT)
+
+				&& sheilds[i][0] != 0 && !remove){
+				playSound('explosion');
+
+				remove = true;
+
+				sheilds[i][0] -= 1;
+
+			}
+
+					
+
+	if (remove == true){
+
+		lasers.splice(l, 1);
+
+		remove = false;}
+
+	}
+
+	
+
+	/* ALIEN LASERS */
+
+	var aremove = false; // whether an alien laser has hit something
+
+					 // prevents one-hit-kills
+
+	for (l = 0; l < alienLasers.length; l++){
+
+
+
+		// checks whether alien lasers have hit the base
+
+		if ( (basex < alienLasers[l][0]) && alienLasers[l][0] < (basex + basew)
+
+          && alienLasers[l][1] < HEIGHT && alienLasers[l][1] > (HEIGHT - baseh )) {
+
+			baseHit = true;
+
+			//break;
+
+		}
+
+		
+
+		// checks whether alien lasers have hit a sheild
+
+		for (j = 0; j < sheilds.length; j++)
+
+			if (alienLasers[l][1] >= sheilds[j][2] &&
+
+				alienLasers[l][1] <= sheilds[j][2] + SHEILDWIDTH
+
+				&& alienLasers[l][0] >=  sheilds[j][1] && 
+
+				alienLasers[l][0] <= (sheilds[j][1] + SHEILDHEIGHT)
+
+				&& sheilds[j][0] != 0 && !aremove ){
+
+				playSound('explosion');
+
+				sheilds[j][0] -= 1;
+
+				aremove = true;
+
+			}
+
+		
+
+		if (aremove){
+
+			alienLasers.splice(l, 1);
+
+			remove = false;
+
+		}		
+
+	}
+
+ }
+
+ 
+
+/*
+
+ *  Main Game Loop Functions
+
+ *    clear() clears all of the elements on canvas for re-drawing
+
+ *    gameLoop() is called by setTimeout() in init() every 50 milliseconds
+
+ */
+
+ 
+
+function clear() {
+
+  ctx.clearRect(0, 0, WIDTH, HEIGHT);
+
+  ctx.fillStyle = "#000000"; // soothing black of space
+
+  ctx.rect(0,0,WIDTH, HEIGHT);
+
+  ctx.fill()
+
+}
+
+ 
+
+// draws the status bar (score, lives left)
+function drawStatus(){
+
+	ctx.font = "14pt Calibri";
+
+	ctx.fillStyle = "#00FF00";
+	ctx.fillText("Score:" + score, 10, 30);
+	ypos = 0;
+	xpos = WIDTH-200;
+	for (l = 0; l < lives; l++){
+		xpos += basew;
+		if (greenBaseReady == true){
+			ctx.drawImage(greenBaseImage, xpos, ypos, basew, basew);
+		}
+	}
+
+	// displays current level
+	ctx.fillText("Level: ", WIDTH/2, 30);
+	ctx.fillText(level, WIDTH/2 + 60, 30);
+}
+
+function gameLoop() {
+
+	clear();
+	//move the base if left or right is currently pressed
+	if (rightDown && basex < WIDTH-basew) basex += 5;
+	else if (leftDown && basex > 0) basex -= 5;
+	if (baseReady) ctx.drawImage(baseImage, basex, HEIGHT-3*baseh);
+
+	hitTest();
+
+	if (seeSaucer) moveSaucer();
+	moveStars(10);
+	moveAliens();
+	moveLaser();
+
+	if (seeSaucer) drawSaucer();
+	drawStatus();
+	drawStars();
+	drawAliens();
+	drawSheilds();
+	drawLaser();
+
+	if (survivors == 0) nextLevel();
+
+	if (lives == 0 || lives < 0) {
+		game = clearTimeout(game);
+		offense = clearInterval(offense);
+		$("#canvas").hide();
+		$("#KillScreen").show();
+		return;
+	};
+	
+	if (baseHit) hit();
+	game = setTimeout(gameLoop, 1000 / 50);
+}
+
+// hit is called when a laser hits the base. Calculates how many lives
+function hit(){
+	baseHit = false;
+	game = clearTimeout(game);
+	playSound('explosion');
+	lives -= 1; 
+}
+
+function nextLevel(){
+	// clear any running game and alien callbacks
+	game = clearTimeout(game);
+	offense = clearInterval(offense);
+	level += 1;
+
+	// reset level-specific globals that might have been changed
+	NCOLS = 11;
+	lasers = [];
+	alienSpeed = 1;
+	sheilds = [3,3,3];
+	init();
+}
+
+/*
+ * Where the Magic Happens
+ */
+
+ function init(){
+	offense = setInterval(alienOffensive, 1000*(1/level)); 
+	alienLasers = [];
+	initSpace();
+	initaliens();
+	initSheilds();
+ }
+
+
+
+</script>
+
+</html>  

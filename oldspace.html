@@ -1,0 +1,285 @@
+<html>  
+<body> 
+<canvas id="canvas" width="700" height="500" ></canvas>
+</body>
+
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript">
+
+
+// canvas-specific variables
+var c;
+var ctx;
+var WIDTH;
+var HEIGHT;
+
+// identifier of repeated action, ie, animation
+// used in clearInterval and setInterval, which 
+// start and stop the game
+var intervalId = 0;
+
+// keyboard presses
+rightDown = false;
+leftDown = false;
+
+var score = 0;
+// variables for aliens
+var aliens;    // a 2D array of aliens with elements 
+var NCOLS;     // [type, xpos, ypos, height, width]
+var NROWS;
+var ALIENWIDTH = 50; 
+var ALIENHEIGHT = 50; // specfic to alien.ico 
+var PADDING = 5;
+
+var alien_x = PADDING;   // starting position of first alien
+var alien_y = PADDING;
+
+var aliendx = 1; // used when the aliens 'bounce'
+
+// Lasers
+var laserTotal = 2; // max amount of lasers + 1
+var lasers =[];     // array of lasers, with elements [xpos, ypos, height, width]
+
+
+
+/*
+ * Initialize Images
+ */
+// base
+var baseReady = false;
+var baseImage = new Image();
+baseImage.onload = function () {
+	baseReady = true;
+};
+baseImage.src = "baseshipb.ico";
+
+// alien 1
+var alien1Ready = false;
+var alien1Image = new Image();
+alien1Image.onload = function () {
+	alien1Ready = true;
+};
+alien1Image.src = "saucer1b.ico";
+
+// alien 2
+var alien2Ready = false;
+var alien2Image = new Image();
+alien2Image.onload = function () {
+	alien2Ready = true;
+};
+alien2Image.src = "saucer2b.ico";
+
+/*
+ * Initialization Functions
+ */
+function init() {
+  c=document.getElementById("canvas");
+  ctx=c.getContext("2d");
+  WIDTH = c.width;
+  HEIGHT = c.height;
+   
+// runs draw every 10 milliseconds
+  intervalId = setInterval(draw, 20);
+  return intervalId;
+}
+
+function init_base() {
+  basex = WIDTH / 2;
+  baseh = 10;
+  basew = 50;
+}
+
+/*
+ * Keypress Handling
+ */
+ 
+// Uses jQuery to log keypresses
+$(document).keydown(keyDown);
+$(document).keyup(keyUp);
+  
+// set rightDown or leftDown if the right or left keys are down
+// shoot laser when space bar '32' is pressed
+function keyDown(evt) {
+  if (evt.keyCode == 39) rightDown = true;
+  else if (evt.keyCode == 37) leftDown = true;
+  
+  if (evt.keyCode == 32 && lasers.length <= laserTotal) {
+	lasers.push([basex + 20, HEIGHT - baseh, 4, 10]); }
+}
+
+//and unset them when the right or left key is released
+function keyUp(evt) {
+  if (evt.keyCode == 39) rightDown = false;
+  else if (evt.keyCode == 37) leftDown = false;
+}
+
+
+function clear() {
+// clears all of the elements on canvas for re-drawing
+  ctx.clearRect(0, 0, WIDTH, HEIGHT);
+  ctx.fillStyle = "#000000"; //soothing black of space
+  ctx.rect(0,0,WIDTH, HEIGHT);
+  ctx.fill()
+}
+
+
+/*
+ * Fun With Aliens
+ *  initaliens(), moveAliens(), drawAliens()
+ */
+ 
+ function initaliens(){
+	// calculate how many aliens we can have
+	// increases with the size of the canvas
+	NROWS = Math.floor((HEIGHT/2)/ALIENHEIGHT);
+	NCOLS = Math.floor(( (WIDTH - 5*ALIENWIDTH) / ALIENWIDTH) - 1);
+
+	aliens = new Array(NROWS);
+	for (i = 0; i < NROWS; i++){
+		aliens[i] = new Array(NCOLS);
+		alien_y += ALIENHEIGHT + PADDING;
+		alien_x = 20;
+		for ( j=0; j<NCOLS; j++){	
+			if (i > NROWS/2){
+			aliens[i][j] = new Array(1, alien_x, alien_y, ALIENHEIGHT, ALIENWIDTH);
+			}
+			else{
+			aliens[i][j] = new Array(2, alien_x, alien_y, ALIENHEIGHT, ALIENWIDTH);
+			}
+			
+			alien_x += ALIENWIDTH + PADDING; }
+		
+		
+		}}
+
+function moveAliens(){
+	for (i = 0; i < NROWS; i++) {
+		for (j = 0; j < NCOLS; j++) {			
+			// go right
+			if (aliens[NROWS-1][NCOLS-1][1] < WIDTH - ALIENWIDTH && aliendx > 0) {
+				aliens[i][j][1] += 1; 
+			} 	
+			// or go left
+			else if (0 < aliens[0][0][1] && aliendx < 0) {
+				aliens[i][j][1] -= 1;
+			}
+			else aliendx = aliendx * -1;
+		}}}
+
+function drawAliens(){
+	for (i=0; i < NROWS; i++) {
+		for (j=0; j < NCOLS; j++) {
+			if (aliens[i][j][0] == 1 && alien1Ready == true) {
+				ctx.drawImage(alien1Image, aliens[i][j][1], aliens[i][j][2]);				
+			}
+			if (aliens[i][j][0] == 2 && alien2Ready == true) {
+				ctx.drawImage(alien2Image, aliens[i][j][1], aliens[i][j][2]); 
+			}
+		}
+	}	  
+}
+
+
+/*
+ * Fun With Lasers
+ *   drawLaser(), moveLaser()
+ *   lasers are initialized in keypress handling
+ */ 
+	  
+function drawLaser() {
+  if (lasers.length)
+    for (var i = 0; i < lasers.length; i++) {
+      ctx.fillStyle = '#f00';
+      ctx.fillRect(lasers[i][0],lasers[i][1],lasers[i][2],lasers[i][3])
+    }
+}
+
+function moveLaser() {
+  for (var i = 0; i < lasers.length; i++) {
+    if (lasers[i][1] > -11) {
+      lasers[i][1] -= 5;
+    } else if (lasers[i][1] < -10) {
+      lasers.splice(i, 1);
+    }
+  }
+}
+
+// checks to see if lasers have hit an alien. If so, removes the laser and
+// 'kills' the alien by setting its # to 0
+ function hitTest(){
+	var remove = false;
+	for (l = 0; l < lasers.length; l++){	
+		for(i =0; i < NROWS; i++){
+			for (j = 0; j < NCOLS; j++){
+				
+				if (lasers[l][1] <= aliens[i][j][2] + aliens[i][j][4]
+				&& lasers[l][0] >=  aliens[i][j][1] && 
+					lasers[l][0] <= (aliens[i][j][1] + aliens[i][j][3])
+					&& aliens[i][j][0] != 0){
+					
+				if (aliens[i][j][0] == 1) score += 10;
+				if (aliens[i][j][0] == 2) score += 20;
+				remove = true;
+				aliens[i][j][0] = 0;
+				}
+			}
+		}
+	if (remove == true){
+		lasers.splice(l, 1);
+		remove = false;}	
+	}
+ }
+
+
+ function checkwin(){
+	for(i =0; i < NROWS; i++){
+		for (j = 0; j < NCOLS; j++){
+			if (aliens[i][j][0] != 0) return;
+		}
+	}
+ 
+ clearInterval(intervalId);
+ ctx.font = "20pt Calibri";
+ ctx.fillStyle = "#00FF00";
+ ctx.fillText("YOU WIN!", HEIGHT/2, WIDTH/2);
+ }
+ 
+/*
+ *  Main Game Loop
+ *    is called by setInterval() in init() every 10 milliseconds
+ */
+function draw() {
+  clear();
+  ctx.font = "14pt Calibri";
+  ctx.fillStyle = "#00FF00";
+  ctx.fillText("Score:" + score, 20, 20);
+  
+  //move the base if left or right is currently pressed
+  if (rightDown && basex < WIDTH-basew) basex += 5;
+  else if (leftDown && basex > 0) basex -= 5;
+  if (baseReady) ctx.drawImage(baseImage, basex, HEIGHT-3*baseh);
+  
+  hitTest();
+  moveAliens();
+  moveLaser();
+
+  
+  drawAliens();
+  drawLaser();
+  checkwin();
+}
+
+/*
+ * Where the Magic Happens
+ */
+
+init();
+init_base();
+initaliens();
+
+
+</script>
+  
+<!-- <script src="space.js"></script>  -->
+
+</html>  
